@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binder Placeholder Generator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f7f7f7;
+            --surface: #ffffff;
+            --text: #1a1a1a;
+            --muted: #6b6b6b;
+            --border: #e5e5e5;
+            --border-focus: #1a1a1a;
+            --accent: #1a1a1a;
+            --accent-hover: #333333;
+            --radius: 6px;
+        }
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            padding: 48px 20px 64px;
+        }
+        .container { width: 100%; max-width: 480px; margin: 0 auto; }
+        .page-header { margin-bottom: 32px; }
+        .page-header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        .page-header p {
+            font-size: 14px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+        }
+        .panel h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+        .field { margin-bottom: 18px; }
+        .field:last-of-type { margin-bottom: 0; }
+        .field > label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .field .hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+            line-height: 1.45;
+        }
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.15s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--border-focus);
+        }
+        input[type="file"] {
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        input[type="file"]::file-selector-button {
+            padding: 5px 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background: var(--border);
+        }
+        .checkbox-field > label {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+        .checkbox-field input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            margin-top: 2px;
+            accent-color: var(--accent);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .color-row { display: flex; gap: 14px; }
+        .color-row .field { flex: 1; margin-bottom: 18px; }
+        .color-input-wrap { display: flex; align-items: center; gap: 8px; }
+        .color-input-wrap input[type="color"] {
+            width: 36px;
+            height: 34px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--surface);
+            cursor: pointer;
+            padding: 2px;
+        }
+        .color-input-wrap input[type="text"] { flex: 1; }
+        .preview-bar {
+            margin: 4px 0 20px;
+            padding: 9px 16px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            text-align: center;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .submit-wrap { margin-top: 24px; }
+        button[type="submit"] {
+            width: 100%;
+            padding: 11px 16px;
+            border: none;
+            border-radius: var(--radius);
+            background: var(--accent);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        button[type="submit"]:hover { background: var(--accent-hover); }
+        .csv-format {
+            margin-top: 28px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+        .csv-format h3 {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+        .csv-format code {
+            display: block;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace;
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.65;
+            background: var(--bg);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+        }
+        .csv-format .header-line { color: var(--text); font-weight: 500; }
+        .rarity-codes {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .rarity-codes span {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin: 2px 3px 2px 0;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .footer {
+            margin-top: 28px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <h1>Binder placeholders</h1>
+            <p>Upload a CSV and download a print-ready PDF.</p>
+        </header>
+
+        <div class="panel">
+            <h2>Settings</h2>
+            <form action="/generate" method="POST" enctype="multipart/form-data">
+                <div class="field">
+                    <label for="title">Set title</label>
+                    <input type="text" id="title" name="title" value="Ascended Heroes" required placeholder="e.g. Ascended Heroes">
+                </div>
+                <div class="color-row">
+                    <div class="field">
+                        <label for="title_color">Title colour</label>
+                        <div class="color-input-wrap">
+                            <input type="color" id="title_color_picker" value="#FAC010" onchange="syncColor('title_color', this.value)">
+                            <input type="text" name="title_color" id="title_color" value="#FAC010" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$" onchange="syncPicker('title_color_picker', this.value)">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="title_bg_color">Header background</label>
+                        <div class="color-input-wrap">
+                            <input type="color" id="title_bg_color_picker" value="#4A4A49" onchange="syncColor('title_bg_color', this.value)">
+                            <input type="text" name="title_bg_color" id="title_bg_color" value="#4A4A49" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$" onchange="syncPicker('title_bg_color_picker', this.value)">
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-bar" id="preview_bar" style="background: #4A4A49; color: #FAC010;">ASCENDED HEROES</div>
+
+                <div class="field checkbox-field">
+                    <label>
+                        <input type="checkbox" name="show_type" id="show_type" value="1" checked>
+                        <span>Show finish type on cards</span>
+                    </label>
+                    <p class="hint">Finish (e.g. Non-holo) left and rarity name right, below the art. When off, only the rarity name shows.</p>
+                </div>
+
+                <div class="field">
+                    <label for="csv_file">Card data (CSV)</label>
+                    <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                    <p class="hint">Columns: number, name, type, rarity_code</p>
+                </div>
+
+                <div class="submit-wrap">
+                    <button type="submit">Generate PDF</button>
+                </div>
+            </form>
+
+            <div class="csv-format">
+                <h3>CSV example</h3>
+                <code>
+                    <span class="header-line">number,name,type,rarity_code</span><br>
+                    1,Erika's Oddish,Grass,C<br>
+                    55,Brock's Geodude,Fighting,U<br>
+                    120,Misty's Staryu,Water,R<br>
+                    183,Misty's Starmie ex,Water,RR
+                </code>
+                <div class="rarity-codes">
+                    Rarity codes:
+                    <span style="background:#9E9E9E;color:#fff;">C</span>
+                    <span style="background:#66BB6A;color:#fff;">U</span>
+                    <span style="background:#42A5F5;color:#fff;">R</span>
+                    <span style="background:#FF7043;color:#fff;">RR</span>
+                    <span style="background:#FAC010;color:#1a1a1a;">SR</span>
+                    <span style="background:#EC407A;color:#fff;">SIR</span>
+                    <span style="background:#AB47BC;color:#fff;">HR</span>
+                </div>
+            </div>
+        </div>
+
+        <p class="footer">Local tool — not deployed</p>
+    </div>
+    <script>
+        function syncColor(textId, value) {
+            document.getElementById(textId).value = value;
+            updatePreview();
+        }
+        function syncPicker(pickerId, value) {
+            if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                document.getElementById(pickerId).value = value;
+            }
+            updatePreview();
+        }
+        function updatePreview() {
+            const title = document.querySelector('input[name="title"]').value || 'Set title';
+            const fontColor = document.getElementById('title_color').value;
+            const bgColor = document.getElementById('title_bg_color').value;
+            const bar = document.getElementById('preview_bar');
+            bar.textContent = title.toUpperCase();
+            bar.style.backgroundColor = bgColor;
+            bar.style.color = fontColor;
+            bar.style.boxShadow = `inset 0 -2px 0 0 ${fontColor}`;
+        }
+        document.querySelector('input[name="title"]').addEventListener('input', updatePreview);
+        document.getElementById('title_color').addEventListener('input', updatePreview);
+        document.getElementById('title_bg_color').addEventListener('input', updatePreview);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+flowchart TB
+  subgraph http [HTTP]
+    GET["GET / → index()"]
+    POST["POST /generate → generate()"]
+  end
+  subgraph gen [generate]
+    V["Validate hex + CSV present"]
+    P["parse_csv(stream)"]
+    G["generate_pdf(...)"]
+    S["send_file(PDF)"]
+  end
+  subgraph pdf [generate_pdf]
+    L["For each page: slice 9 cards"]
+    D["draw_card per slot"]
+    M["draw_crop_marks"]
+    F["Page footer string"]
+    N["showPage except last"]
+  end
+  subgraph card [draw_card]
+    C1["Clip rounded card; white fill"]
+    C2["Header bar + title"]
+    C3["Badge + name truncate"]
+    C4["Label row: finish + rarity"]
+    C5["Art rect; watermark; /total"]
+    C6["Rarity label; footer; border"]
+  end
+  GET --> index
+  POST --> V --> P --> G --> S
+  G --> L --> D --> M --> F --> N
+  D --> card

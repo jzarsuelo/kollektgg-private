@@ -1,0 +1,17 @@
+---
+description: kollekt.gg binder placeholder — project context and docs map
+alwaysApply: true
+---
+
+# Binder Placeholder Generator (project)
+
+Flask + ReportLab app: upload CSV, customise header colours, download **A4 PDF** with **9 cards/page** (3×3), **63×88 mm** each, crop marks. No database or external APIs.
+
+| Doc | Purpose |
+|-----|---------|
+| `README.md` | Quick start, CSV shape, print settings |
+| `GUIDE.md` | Full user guide, rarity/type tables, limitations |
+| `CURSOR.md` | **Authoritative** technical spec: coordinates, constants, functions, known PDF vs JSX limits |
+| `REFERENCE.md` | Printable UI parity checklist vs `printed_ui.png` |
+
+When changing **PDF output**, follow `.cursor/rules/binder-placeholder-pdf.mdc` and `CURSOR.md`. Goal: match **`printed_ui.png`** for spacing, fonts (within ReportLab limits), colours, and structure.

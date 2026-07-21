@@ -1,0 +1,31 @@
+---
+description: TCG binder placeholder PDF — pixel parity, units, and change constraints
+globs: app.py
+alwaysApply: false
+---
+
+# Binder placeholder PDF (app.py)
+
+## Ground truth
+
+- **Visual reference:** `printed_ui.png` in the repo root (and `assets/d__placeholder-tool_printed_ui.png`). Any layout, spacing, typography, colours, or rarity badge behaviour change must be validated by overlay or side-by-side comparison with this image at **63mm × 88mm** card scale.
+- **Numerical source of truth:** JSX card **215×301 px** scaled to **63×88 mm** via `PTS_PER_JSX_PIXEL_X/Y` and `JSX_CARD_WIDTH_PX`/`JSX_CARD_HEIGHT_PX`. Do not change JSX reference px when resizing output; only change `CARD_W`/`CARD_H` if physical card size changes.
+- **Deep spec:** Read `CURSOR.md` before editing drawing logic. User-facing flow: `README.md`, `GUIDE.md`.
+
+## Units (do not regress)
+
+- ReportLab uses **points**; `mm` from `reportlab.lib.units` is the **mm→pt** multiplier (`63 * mm` = width in points for 63mm).
+- **`PTS_PER_JSX_PIXEL_X` / `PTS_PER_JSX_PIXEL_Y` already yield points** when multiplying JSX pixel values. **Never** multiply those-derived sizes by `MM_TO_PT` — double-conversion bug.
+- Horizontal letter-spacing uses **`PTS_PER_JSX_PIXEL_X`**; vertical font sizes and band heights use **`PTS_PER_JSX_PIXEL_Y`** (see `CURSOR.md` tables).
+
+## Fidelity priorities
+
+1. Section stack heights must still sum to **`CARD_H`**; art zone is the flex remainder (`ART_H`).
+2. Rarity badge: **one character** → `canvas.circle` (diameter from content); **multiple characters** → `roundRect` with `corner_r = min(BADGE_R, w/2−ε, h/2−ε)` so it stays a rounded rect, not a pill. Vertically centered on the **name** optical center (font metrics).
+3. Opacity on art zone: **bake** hex values (no layer opacity in ReportLab); keep formulas documented next to constants.
+4. Accept **documented** gaps vs browser/CSS only: Helvetica-Bold vs weight 900 watermark, flat art bg vs CSS gradient, manual per-character spacing vs CSS letter-spacing + kerning. Improving parity requires **embedding a TTF** and/or measuring against `printed_ui.png`, not guessing.
+
+## Scope
+
+- Prefer **single-file** logic in `app.py` unless the user asks for a split.
+- UI changes in `templates/index.html` stay self-contained (inline CSS/JS); brand defaults should stay aligned with header defaults in `/generate`.

@@ -1,0 +1,62 @@
+---
+description: Project context — Spending & Inventory Tracker (Google Sheets). MVP iteration 1 complete. How it works and what not to change.
+alwaysApply: true
+---
+
+# Spending & Inventory Tracker — Project Context
+
+This project is a **Spending & Inventory Tracker** spreadsheet (**template version** in `CONFIG.TEMPLATE_VERSION`, year-based **YY.minor** e.g. **26.1**). `onOpen` runs `_maybeAutoUpgrade` when `tracker_script_version` (document property) differs — merges Settings types, patches Transactions, rebuilds Dashboard/Guide. Designed for **reusability** and **data migratability**. User patch steps: **APPLY_PATCH_V26.1.md**.
+
+## Canonical contract (do not break)
+
+- **Sheet names:** Exactly `Transactions`, `Dashboard`, `Settings`, `Guide`. Formulas and scripts depend on these; do not rename.
+- **Transactions columns (fixed order):** A=Date … J=ID (formula); K=Up-front amount (Deposit / Pre-order paid); L=Linked deposit ID (optional, balance row). F=Total: if Type is Deposit or Pre-order paid then K; else Qty×Unit price. Types include Purchase, Income, Deposit, Pre-order paid; blank Type = Purchase. Inventory uses Purchase/blank only. Date validation; row 1 and column A frozen.
+- **Settings:** Budget B2; currency E2 (label, e.g. USD); categories A from row 4; payment methods B from row 4; transaction types C from row 4. Used for dropdowns in Transactions.
+
+## How it works
+
+- **Transactions** is the single source of truth: each row feeds both spending (Total, Category, Date) and inventory (Item, Qty).
+- **Dashboard** is formula-only: KPIs including Total Spent (all cash-out types), **Spending breakdown** (Purchases vs Deposits vs Prepaid), category/monthly trends (include Deposit + Pre-order paid), dynamic Inventory (Purchase/blank only).
+- **Settings** holds budget, currency label, and dropdown lists. **Guide** sheet has short "How to use" text. All config in Settings for reuse.
+
+## Tracker menu (all features)
+
+- **Run setup** — creates/recreates all 4 sheets from scratch.
+- **Apply fixes (keep data)** — merges missing default transaction types (Settings C); rebuilds Dashboard/Guide; patches Transactions; sets version marker.
+- **Reset Transactions** — clears user data (A–E, G–I, K–L) but preserves Total (F) and ID (J) formulas.
+- **Reset all** — full recreate with confirmation.
+- **Export** — Transactions to sheet `Export_CSV` (tabular A–L, same as `Backup_Transactions`; avoids multiline cell corruption), Settings to `Export_Settings` (A–E values), full backup (`Backup_Transactions` + `Backup_Settings`). `exportTransactionsToCsv()` remains for string/file use. Import still falls back to legacy column-A CSV lines when the sheet is not tabular (newlines inside quoted fields can break that path).
+- **Import** — Transactions import reapplies formulas + version marker; Settings import merges types + `_patchTransactions`; full backup also rebuilds Guide and sets marker.
+- **Run tests** — `runAllTests()` checks sheets, headers, formulas, exports, imports, CSV parser.
+
+## Codebase layout
+
+- **REQUIREMENTS.md** — Full MVP spec, data model, edge cases (§7), reusability (§10). All §9 acceptance criteria marked done.
+- **README.md** — User-facing usage (template version in Config), quick start, export/import/update workflows.
+- **APPLY_PATCH_V26.1.md** — How to deploy script updates and automatic upgrade behavior (filename matches current major doc; version number is in `CONFIG.TEMPLATE_VERSION`).
+- **GOOGLE_COMPLIANCE_GUIDE.md** — Apps Script OAuth/scopes, avoiding "unverified app" warnings.
+- **TESTING.md** — Manual checklist (15 steps), edge cases, automated tests, fixes applied log.
+- **TEMPORARY_WORKFLOW_OPEN_SEALED_BEFORE_MVP3.md** — **MVP3-scope only:** manual **open/transform** stand-in until the feature exists (net‑$0 Purchase batch: close sealed Item with negative Total + child rows; no double-count Total Spent). No other features documented there.
+- **scripts/** — Google Apps Script:
+  - `Config.gs` — canonical CONFIG object (sheet names, column indices, defaults).
+  - `Setup.gs` — `onOpen` menu, `runSetup`, `applyFixes`, `_patchTransactions`, `_setupTransactions`, `_setupSettings`, `_setupDashboard`, `_setupGuide`, reset functions.
+  - `ExportImport.gs` — 3 export functions, 3 import functions, CSV parser (`_parseCsvLine`), helpers.
+  - `Tests.gs` — `runAllTests` (11 automated checks incl. CSV parser and import round-trip).
+  - `appsscript.json` — single scope `spreadsheets`.
+
+## When editing
+
+- Preserve sheet names and Transactions column order. Any new formulas or scripts must reference `Transactions`, `Dashboard`, `Settings` and column indices from Config.gs.
+- All `getRange(row, col, numRows, numCols)` calls: 4th arg is always width (use `1` for single columns), 3rd arg is row count (not a column index). This was a recurring bug source.
+- Dashboard spill formulas need gaps: categories 22 rows, monthly trend 8 rows. Increase if adding more spill sections.
+- Export/import: dates as YYYY-MM-DD; Total as value in CSV; UTF-8. Import writes user-editable columns (A–E, G–I, K–L); Total (F) and ID (J) formulas recalculate.
+- Formula strings: extract FILTER expressions into variables (like `categoryFilter`, `inventoryFilter`) to avoid paren-counting bugs in BYROW wrappers.
+- Edge cases: blank Item excluded from inventory (FILTER in formulas); same item different spelling = two inventory rows (no normalization in MVP).
+
+## Iteration 1 done — planned next steps
+
+- **MVP2 (focus):** Sale type (inventory decreases on sell) + per-item profitability (cost vs sale revenue per SKU).
+- **MVP3 (sole focus when scheduled):** Open/transform (e.g. sealed → packs/cards; cost moves to children).
+- **Other candidates:** Dashboard protection; import append mode; number/currency formatting on Dashboard KPIs.
+
+Until MVP3 ships, **opening sealed** → **TEMPORARY_WORKFLOW_OPEN_SEALED_BEFORE_MVP3.md** (that file is **not** a general workaround doc).
