@@ -257,7 +257,30 @@ def draw_crop_marks(c, x, y, w, h):
 # SINGLE CARD (x, y = bottom-left, Y upward)
 # ════════════════════════════════════════════════════════════
 
-def draw_card(c, x, y, card, set_card_count, title, title_color, title_bg_color,
+def _parse_set_card_count(raw_value):
+    raw_value = (raw_value or '').strip()
+    if not raw_value:
+        return None
+    try:
+        value = int(raw_value)
+    except ValueError:
+        return None
+    return value if value > 0 else None
+
+
+def _set_card_count_from_row(row):
+    for key in ('set_card_count', 'setcardcount'):
+        value = _parse_set_card_count(row.get(key, ''))
+        if value is not None:
+            return value
+    return None
+
+
+def _card_number_pad_width(set_total):
+    return max(3, len(str(set_total)))
+
+
+def draw_card(c, x, y, card, set_total, title, title_color, title_bg_color,
               show_type=True):
     card_number = card['number']
     card_name = card['name']
@@ -265,7 +288,8 @@ def draw_card(c, x, y, card, set_card_count, title, title_color, title_bg_color,
     rarity_code = card['rarity_code']
 
     rarity_info = RARITY_MAP.get(rarity_code, RARITY_MAP['C'])
-    number_display = str(card_number)
+    pad_width = _card_number_pad_width(set_total)
+    number_display = str(card_number).zfill(pad_width)
 
     card_top_y = y + CARD_H
     header_bottom_y = card_top_y - HEADER_H
@@ -374,7 +398,7 @@ def draw_card(c, x, y, card, set_card_count, title, title_color, title_bg_color,
 
     c.setFillColor(HexColor(COLOR_TOTAL_TEXT))
     c.setFont("Helvetica", FONT_TOTAL_PT)
-    total_suffix = f"/{set_card_count}"
+    total_suffix = f"/ {str(set_total).zfill(pad_width)}"
     total_text_right_x = art_left_x + art_width_pt - ART_TOTAL_RIGHT
     total_baseline_y = art_zone_bottom_y + ART_TOTAL_BOTTOM
     c.drawRightString(total_text_right_x, total_baseline_y, total_suffix)
@@ -438,9 +462,11 @@ def draw_card(c, x, y, card, set_card_count, title, title_color, title_bg_color,
 # ════════════════════════════════════════════════════════════
 
 def generate_pdf(cards, title, title_color, title_bg_color, output_path,
-                 show_type=True):
-    set_card_count = len(cards)
-    page_count = math.ceil(set_card_count / CARDS_PER_PAGE)
+                 show_type=True, set_total=None):
+    card_count = len(cards)
+    if set_total is None:
+        set_total = card_count
+    page_count = math.ceil(card_count / CARDS_PER_PAGE)
 
     c = canvas.Canvas(output_path, pagesize=A4)
     c.setTitle(f"{title} - Binder Placeholders | kollekt.gg")
@@ -448,7 +474,7 @@ def generate_pdf(cards, title, title_color, title_bg_color, output_path,
 
     for page_index in range(page_count):
         slice_start = page_index * CARDS_PER_PAGE
-        slice_end = min(slice_start + CARDS_PER_PAGE, set_card_count)
+        slice_end = min(slice_start + CARDS_PER_PAGE, card_count)
         cards_on_page = cards[slice_start:slice_end]
 
         for slot_index, card in enumerate(cards_on_page):
@@ -457,7 +483,8 @@ def generate_pdf(cards, title, title_color, title_bg_color, output_path,
             card_left_x = MARGIN_X + column_index * (CARD_W + GAP)
             card_bottom_y = MARGIN_Y + row_index * (CARD_H + GAP)
 
-            draw_card(c, card_left_x, card_bottom_y, card, set_card_count,
+            card_set_total = card.get('set_card_count') or set_total
+            draw_card(c, card_left_x, card_bottom_y, card, card_set_total,
                       title, title_color, title_bg_color, show_type=show_type)
             draw_crop_marks(c, card_left_x, card_bottom_y, CARD_W, CARD_H)
 
@@ -479,6 +506,7 @@ def generate_pdf(cards, title, title_color, title_bg_color, output_path,
 
 def parse_csv(file_stream):
     parsed_cards = []
+    csv_set_total = None
     text = file_stream.read().decode('utf-8-sig')
     reader = csv.DictReader(io.StringIO(text))
     if reader.fieldnames:
@@ -491,13 +519,19 @@ def parse_csv(file_stream):
         name = row.get('name', '').strip()
         card_type = row.get('type', '').strip()
         rarity_code = row.get('rarity_code', 'C').strip()
+        row_set_total = _set_card_count_from_row(row)
+        if row_set_total is not None and csv_set_total is None:
+            csv_set_total = row_set_total
         if name:
-            parsed_cards.append({
+            card = {
                 'number': number, 'name': name,
                 'type': card_type, 'rarity_code': rarity_code,
-            })
+            }
+            if row_set_total is not None:
+                card['set_card_count'] = row_set_total
+            parsed_cards.append(card)
     parsed_cards.sort(key=lambda row: row['number'])
-    return parsed_cards
+    return parsed_cards, csv_set_total
 
 
 # ════════════════════════════════════════════════════════════
@@ -525,12 +559,15 @@ def generate():
         return "No CSV file uploaded.", 400
 
     try:
-        cards = parse_csv(uploaded_csv.stream)
+        cards, csv_set_total = parse_csv(uploaded_csv.stream)
     except Exception as e:
         return f"Error parsing CSV: {str(e)}", 400
 
     if not cards:
         return "No valid cards found in CSV.", 400
+
+    form_set_total = _parse_set_card_count(request.form.get('set_card_count'))
+    set_total = form_set_total or csv_set_total
 
     safe_stem = "".join(ch for ch in title if ch.isalnum() or ch in (' ', '-', '_')).strip()
     filename = f"{safe_stem.replace(' ', '_')}_placeholders.pdf"
@@ -538,7 +575,7 @@ def generate():
 
     try:
         generate_pdf(cards, title, title_color, title_bg_color, output_path,
-                     show_type=show_type)
+                     show_type=show_type, set_total=set_total)
     except Exception as e:
         return f"Error generating PDF: {str(e)}", 500
 

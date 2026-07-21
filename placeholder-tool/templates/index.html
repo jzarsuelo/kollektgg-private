@@ -230,6 +230,12 @@
                 </div>
                 <div class="preview-bar" id="preview_bar" style="background: #4A4A49; color: #FAC010;">ASCENDED HEROES</div>
 
+                <div class="field">
+                    <label for="set_card_count">Set card count</label>
+                    <input type="number" id="set_card_count" name="set_card_count" min="1" placeholder="e.g. 84">
+                    <p class="hint">Official set size for the <code>/XXX</code> on each card (e.g. 027/084). Can also be a CSV column: <code>set_card_count</code> or <code>setCardCount</code>. Secret rares like 100/084 use the same total.</p>
+                </div>
+
                 <div class="field checkbox-field">
                     <label>
                         <input type="checkbox" name="show_type" id="show_type" value="1" checked>
@@ -241,7 +247,7 @@
                 <div class="field">
                     <label for="csv_file">Card data (CSV)</label>
                     <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
-                    <p class="hint">Columns: number, name, type, rarity_code</p>
+                    <p class="hint">Columns: number, name, type, rarity_code (optional: set_card_count)</p>
                 </div>
 
                 <div class="submit-wrap">
